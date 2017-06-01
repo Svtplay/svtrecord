@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
+# -*- encoding: utf-8 -*-
+# encoding: UTF-8
 #
 #  svtrecord.rb
 #
@@ -160,11 +162,12 @@ file.unlink
 
 # Read the M3U content, following redirects as required
 base_url = info[:url]
-response = Net::HTTP.get_response(URI(base_url))
+puts "url=#{base_url}"
+response = Net::HTTP.get_response(URI.parse(base_url).host, URI.parse(base_url).path)
 while response.kind_of?(Net::HTTPRedirection)
 	base_url = response['location']
 	warn "Redirected to #{base_url}"
-	response = Net::HTTP.get_response(URI(base_url))
+	response = Net::HTTP.get_response(URI.parse(base_url).host, URI.parse(base_url).path)
 end
 m3u8 = response.body
 
@@ -202,9 +205,7 @@ filename = options[:filename] || info[:alt].downcase.tr('åäöàèé?!', 'aaoae
 
 autostream = nil
 streams.each do |s|
-	if autostream.nil? && options[:bitrate] && s[:bitrate] > options[:bitrate]
-		autostream = [ s[:url], s[:bitrate] ]
-	end
+	autostream = [ s[:url], s[:bitrate] ]
 	printf "%-12s %-12s %s MB\n", s[:bitrate].to_bitrate , s[:resolution], s[:bitrate].to_i * info[:length].to_i / 8 / 1000000
 	puts "ffmpeg -i '#{s[:url]}' -c copy -bsf:a aac_adtstoasc #{filename}_#{s[:bitrate].to_i.to_bitrate}.mp4"
 	puts
